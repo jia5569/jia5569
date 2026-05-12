@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>✨ 生日快乐 ✨</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    user-select: none;
+    cursor: default;
+    position: relative;
+  }
+
+  #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  /* 密码弹窗 */
+  .password-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba5, 5, 15, 0.88);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.6s, visibility 0.6s;
+  }
+  .password-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .password-box {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    padding: 36px 28px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 183, 77, 0.15);
+    max-width: 320px;
+    width: 88vw;
+    animation: fadeInUp 0.6s ease;
+  }
+  .password-box .hint-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    animation: bounceEnvelope 2s infinite;
+  }
+  .password-box .hint-text {
+    color: #ffe082;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 10px #ffb74d;
+  }
+  .password-box .hint-sub {
+    color: #cfd8dc;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    opacity: 0.7;
+  }
+  .password-input {
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 30px;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1.3rem;
+    text-align: center;
+    letter-spacing: 6px;
+    outline: none;
+    transition: all 0.3s;
+    font-family: inherit;
+  }
+  .password-input:focus {
+    border-color: #ffb74d;
+    box-shadow: 0 0 16px rgba(255, 183, 77, 0.4);
+  }
+  .password-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 4px;
+  }
+  .password-error {
+    color: #ff8a80;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    min-height: 20px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .password-error.show {
+    opacity: 1;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
+    75% { transform: translateX(-4px); }
+  }
+
+  .music-toggle {
+    position: fixed;
+    top: 18px; left: 18px;
+    z-index: 60;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .music-toggle.show {
+    opacity: 1;
+    pointer-events: auto;
+    animation: softPop 0.4s ease;
+  }
+  @keyframes softPop {
+    0% { transform: scale(0.5); }
+    100% { transform: scale(1); }
+  }
+
+  .card { position: relative; z-index: 10; text-align: center; }
+
+  .cake-container { display: inline-block; margin-bottom: 20px; }
+
+  .cake { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+  .plate { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 170px; height: 16px; background: #e0c9a6; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+  .layer { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 12px; background: #fde7d4; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.05); }
+  .layer1 { bottom: 18px; width: 140px; height: 38px; background: #ffd5b0; border-radius: 18px; }
+  .layer2 { bottom: 52px; width: 120px; height: 34px; background: #ffeed9; border-radius: 16px; }
+  .layer3 { bottom: 82px; width: 100px; height: 30px; background: #ffe0c0; border-radius: 14px; }
+  .cream { position: absolute; bottom: 108px; left: 50%; transform: translateX(-50%); width: 110px; height: 16px; background: #fff5e6; border-radius: 20px 20px 6px 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 6px; padding-top: 4px; }
+  .cream-dot { width: 10px; height: 10px; background: #ffb3b3; border-radius: 50%; }
+  .candles { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; z-index: 5; }
+  .candle { width: 12px; height: 30px; background: linear-gradient(180deg, #ffcc80 0%, #ffb74d 100%); border-radius: 20px 20px 4px 4px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: background 0.5s, box-shadow 0.5s; }
+  .flame { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 10px; height: 14px; background: radial-gradient(circle at 50% 60%, #fff9c4 10%, #ffb300 80%); border-radius: 50% 50% 30% 30%; box-shadow: 0 0 12px #ff9800; animation: flicker 0.15s infinite alternate; transition: opacity 0.5s, transform 0.5s; }
+  @keyframes flicker { 0% { transform: translateX(-50%) scale(1, 0.9); } 100% { transform: translateX(-50%) scale(0.9, 1.1); } }
+  .candle.out { background: #9e9e9e; box-shadow: none; }
+  .candle.out .flame { opacity: 0; transform: translateX(-50%) scale(0.2); box-shadow: none; }
+
+  .message { color: #fbe9e7; font-size: 2.4rem; font-weight: 300; letter-spacing: 6px; text-shadow: 0 0 20px #ffb74d, 0 0 40px #ff9800; margin-top: 20px; min-height: 70px; white-space: nowrap; opacity: 0; transition: opacity 1s; }
+  .message.show { opacity: 1; }
+  .sub-message { color: #cfd8dc; font-size: 1.2rem; margin-top: 8px; opacity: 0; transition: opacity 1.2s; }
+  .sub-message.show { opacity: 0.8; animation: softGlow 2s infinite alternate; }
+  @keyframes softGlow { from { text-shadow: 0 0 6px #ffb300; } to { text-shadow: 0 0 16px #ffc107, 0 0 24px #ff9800; } }
+
+  #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
+
+  #barrage-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 22; overflow: hidden; }
+  .barrage-item {
+    position: absolute;
+    white-space: nowrap;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 1.3rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(255, 140, 100, 0.5), 0 0 20px rgba(255, 180, 100, 0.6);
+    animation: barrageMove linear forwards;
+    pointer-events: none;
+  }
+  @keyframes barrageMove { from { transform: translateX(110vw); } to { transform: translateX(-100%); } }
+
+  .memory-hint {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffe082;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px #ffb74d;
+    cursor: pointer;
+    z-index: 35;
+    opacity: 0;
+    transition: opacity 1s;
+    background: rgba(0,0,0,0.45);
+    padding: 10px 24px;
+    border-radius: 50px;
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+  }
+  .memory-hint.show {
+    opacity: 1;
+    animation: gentlePulse 2s infinite;
+  }
+  @keyframes gentlePulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.03); } 100% { transform: translateX(-50%) scale(1); } }
+
+  .secret-envelope {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 35;
+    font-size: 3rem;
+    cursor: pointer;
+    animation: bounceEnvelope 1.5s infinite;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s;
+  }
+  .secret-envelope.show { opacity: 1; pointer-events: auto; }
+  @keyframes bounceEnvelope {
+    0%, 100% { transform: translate(-50%, -50%); }
+    50% { transform: translate(-50%, -70%); }
+  }
+  .secret-message-box {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: rgba(20, 20, 40, 0.92);
+    backdrop-filter: blur(14px);
+    color: #fff;
+    padding: 24px 28px;
+    border-radius: 24px;
+    box-shadow: 0 0 30px rgba(255, 183, 77, 0.4);
+    max-width: 320px;
+    text-align: center;
+    z-index: 55;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    letter-spacing: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .secret-message-box.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+  }
+  .secret-message-box .close-secret {
+    margin-top: 16px;
+    display: inline-block;
+    padding: 6px 20px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .gallery-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 10, 20, 0.92);
+    z-index: 40;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+  }
+  .gallery-overlay.active { opacity: 1; pointer-events: auto; }
+  
+  .gallery-close {
+    position: absolute;
+    top: 20px; right: 24px;
+    font-size: 2.8rem;
+    color: #fff;
+    cursor: pointer;
+    z-index: 9999;
+    text-shadow: 0 0 12px #ffb74d;
+    transition: transform 0.2s;
+    background: rgba(0,0,0,0.3);
+    width: 48px; height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+  .gallery-close:active { transform: scale(0.9); }
+  
+  .gallery-image-container {
+    width: 80vw; max-width: 500px; height: 50vh; max-height: 400px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    background: #1a1a2e;
+    pointer-events: auto;
+  }
+  .gallery-image {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    transition: opacity 0.4s;
+    border-radius: 20px;
+    pointer-events: none;
+  }
+  .gallery-caption {
+    color: #fff3e0; margin-top: 18px; font-size: 1.2rem;
+    letter-spacing: 1px; text-shadow: 0 0 8px #ffb300; text-align: center; min-height: 28px;
+    pointer-events: auto;
+  }
+  .gallery-controls {
+    display: flex; gap: 30px; margin-top: 16px;
+    color: #fff; font-size: 2rem; cursor: pointer; user-select: none;
+    pointer-events: auto;
+  }
+  .gallery-arrow { transition: transform 0.2s, color 0.2s; pointer-events: auto; }
+  .gallery-arrow:active { transform: scale(1.2); color: #ffb74d; }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 500px) {
+    .message { font-size: 1.8rem; letter-spacing: 4px; }
+    .gallery-image-container { width: 90vw; height: 40vh; }
+    .barrage-item { font-size: 1rem; padding: 6px 16px; }
+    .gallery-close { top: 15px; right: 18px; width: 44px; height: 44px; font-size: 2.4rem; }
+    .password-box { padding: 28px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<!-- 密码对话框 -->
+<div class="password-overlay" id="passwordOverlay">
+  <div class="password-box">
+    <div class="hint-icon">🔐</div>
+    <div class="hint-text">输入密码，开启惊喜 ✨</div>
+    <div class="hint-sub">提示：一个三位数字，和你有关</div>
+    <input type="text" class="password-input" id="passwordInput" placeholder="??? " maxlength="3" inputmode="numeric" autocomplete="off">
+    <div class="password-error" id="passwordError">再想想哦，很简单的数字～</div>
+  </div>
+</div>
+
+<div class="music-toggle" id="musicToggle">🔊</div>
+
+<div class="card" id="card">
+  <div class="cake-container" id="cakeContainer">
+    <div class="cake">
+      <div class="plate"></div>
+      <div class="layer layer1"></div>
+      <div class="layer layer2"></div>
+      <div class="layer layer3"></div>
+      <div class="cream">
+        <div class="cream-dot"></div><div class="cream-dot"></div><div class="cream-dot"></div><div class="cream-dot"></div>
+      </div>
+      <div class="candles" id="candles">
+        <div class="candle" id="candle1"><div class="flame"></div></div>
+        <div class="candle" id="candle2"><div class="flame"></div></div>
+        <div class="candle" id="candle3"><div class="flame"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="message" id="message"></div>
+  <div class="sub-message" id="subMessage">愿你眼里有光，心中有星星 ✨</div>
+</div>
+
+<canvas id="fireworks-canvas"></canvas>
+<div id="barrage-container"></div>
+
+<div class="secret-envelope" id="secretEnvelope">💌</div>
+<div class="secret-message-box" id="secretMessageBox">
+  <div id="secretText">你是我最幸运的遇见，要永远快乐 🌟</div>
+  <div class="close-secret" id="closeSecret">知道了 💖</div>
+</div>
+
+<div class="memory-hint" id="memoryHint">✨ 点这里，看看我们一起走过的日子 ✨</div>
+
+<div class="gallery-overlay" id="galleryOverlay">
+  <div class="gallery-close" id="galleryClose">&times;</div>
+  <div class="gallery-image-container" id="galleryImageContainer">
+    <img class="gallery-image" id="galleryImage" src="" alt="回忆">
+  </div>
+  <div class="gallery-caption" id="galleryCaption"></div>
+  <div class="gallery-controls">
+    <span class="gallery-arrow" id="prevBtn">◀</span>
+    <span class="gallery-arrow" id="nextBtn">▶</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ⭐ 自定义内容区
+    const name = "箖宝";
+    const secretMessage = "你是我最幸运的遇见，要永远快乐，平安顺遂 💫";
+
+    const memories = [
+  { src: 'photo1.jpg', caption: '第一次一起奔向云海 🌤️' },
+  { src: 'photo2.jpg', caption: '荧光草地的拥抱 💙' },
+  { src: 'photo3.jpg', caption: '心动的黄昏约会 🌆' }
+];
+
+    // 已换成经典生日快乐歌 钢琴版
+    const musicSrc = "https://freetestdata.com/wp-content/uploads/2021/09/Free_Test_Data_100KB_MP3.mp3";
+    // =================================
+
+    const CORRECT_PASSWORD = "514";
+
+    function getPlaceholder(text) {
+      return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect fill="#f8bbd0" width="400" height="300"/><text x="200" y="160" font-family="sans-serif" font-size="22" fill="#fff" text-anchor="middle">${text}</text></svg>`);
+    }
+    memories.forEach((m, idx) => { if (!m.src) m.src = getPlaceholder(`照片 ${idx + 1}`); });
+
+    const barrageMessages = [
+      '顺顺利利 ✨', '别熬夜 🌙', '好好爱自己 💖', '要开心呀 😊',
+      '要平安 🍀', '光芒万丈 🌟', '永远被爱 💕', '吃好睡好 🍰',
+      '无忧无虑 🎈', '前程似锦 🚀', '每天都有小确幸 🌸', '你值得最好的 🎁'
+    ];
+    const barrageColors = [
+      'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
+      'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+      'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)',
+      'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+      'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)',
+      'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+      'linear-gradient(135deg, #f5576c 0%, #ffb199 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    ];
+
+    // ========== 音乐 ==========
+    const musicToggle = document.getElementById('musicToggle');
+    const audio = new Audio(musicSrc);
+    audio.loop = true;
+    let musicPlaying = false;
+    function updateMusicIcon() { musicToggle.textContent = musicPlaying ? '🔊' : '🔇'; }
+    function toggleMusic() {
+      if (!musicPlaying) {
+        audio.play().then(() => { musicPlaying = true; updateMusicIcon(); }).catch(()=>{});
+      } else {
+        audio.pause();
+        musicPlaying = false;
+        updateMusicIcon();
+      }
+    }
+    musicToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleMusic(); });
+    function startMusic() {
+      musicToggle.classList.add('show');
+      audio.play().then(() => { musicPlaying = true; updateMusicIcon(); }).catch(() => { musicPlaying = false; updateMusicIcon(); });
+    }
+
+    // ========== 星空 ==========
+    const starsCanvas = document.getElementById('stars-canvas');
+    const starsCtx = starsCanvas.getContext('2d');
+    let stars = [];
+    function resizeStars() {
+      starsCanvas.width = window.innerWidth;
+      starsCanvas.height = window.innerHeight;
+      initStars();
+    }
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < 180; i++) {
+        stars.push({
+          x: Math.random() * starsCanvas.width,
+          y: Math.random() * starsCanvas.height,
+          radius: Math.random() * 2.2 + 0.5,
+          brightness: Math.random() * 0.5 + 0.5,
+          speed: Math.random() * 0.3 + 0.1
+        });
+      }
+    }
+    function drawStars() {
+      starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+      for (let s of stars) {
+        starsCtx.beginPath();
+        starsCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        starsCtx.fillStyle = `rgba(255, 255, 240, ${s.brightness})`;
+        starsCtx.fill();
+        s.brightness += (Math.random() - 0.5) * 0.03;
+        if (s.brightness > 0.9) s.brightness = 0.9;
+        if (s.brightness < 0.2) s.brightness = 0.2;
+        s.y -= s.speed * 0.1;
+        if (s.y < -5) { s.y = starsCanvas.height + 5; s.x = Math.random() * starsCanvas.width; }
+      }
+      requestAnimationFrame(drawStars);
+    }
+    window.addEventListener('resize', resizeStars);
+    resizeStars();
+    drawStars();
+
+    // ========== 蛋糕 + 动画元素 ==========
+    const candles = document.querySelectorAll('.candle');
+    const messageDiv = document.getElementById('message');
+    const subMessageDiv = document.getElementById('subMessage');
+    const memoryHint = document.getElementById('memoryHint');
+    let memoriesReady = false;
+
+    function typeMessage(text, element, speed = 100) {
+      element.textContent = '';
+      let i = 0;
+      return new Promise(resolve => {
+        function type() { if(i < text.length) { element.textContent += text.charAt(i); i++; setTimeout(type, speed); } else resolve(); }
+        type();
+      });
+    }
+    function blowOutCandles() {
+      candles.forEach(c => c.classList.add('out'));
+    }
+
+    // ========== 弹幕 ==========
+    const barrageContainer = document.getElementById('barrage-container');
+    let barrageTimer = null;
+    function createBarrage() {
+      const msg = barrageMessages[Math.floor(Math.random() * barrageMessages.length)];
+      const item = document.createElement('div');
+      item.className = 'barrage-item';
+      item.textContent = msg;
+      item.style.background = barrageColors[Math.floor(Math.random() * barrageColors.length)];
+      item.style.top = (Math.random() * 75 + 10) + '%';
+      item.style.animationDuration = (Math.random() * 6 + 8) + 's';
+      barrageContainer.appendChild(item);
+      item.addEventListener('animationend', () => item.remove());
+    }
+    function startBarrage() {
+      function emit() { createBarrage(); barrageTimer = setTimeout(emit, Math.random() * 500 + 700); }
+      emit();
+      setTimeout(() => { clearTimeout(barrageTimer); barrageTimer = null; }, 16000);
+    }
+
+    // ========== 烟花 ==========
+    const fwCanvas = document.getElementById('fireworks-canvas');
+    const fwCtx = fwCanvas.getContext('2d');
+    let fireworks = [];
+    fwCanvas.width = window.innerWidth;
+    fwCanvas.height = window.innerHeight;
+    window.addEventListener('resize', () => { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; });
+    function random(min,max){ return Math.random()*(max-min)+min; }
+    class Particle {
+      constructor(x,y,color){ this.x=x;this.y=y;this.color=color;const a=random(0,Math.PI*2),s=random(1.5,5);this.vx=Math.cos(a)*s;this.vy=Math.sin(a)*s;this.life=1;this.decay=random(0.015,0.03); }
+      update(){ this.x+=this.vx;this.y+=this.vy;this.vy+=0.04;this.life-=this.decay; }
+      draw(ctx){ ctx.save();ctx.globalAlpha=this.life;ctx.fillStyle=this.color;ctx.beginPath();ctx.arc(this.x,this.y,2.2,0,Math.PI*2);ctx.fill();ctx.restore(); }
+    }
+    class Firework {
+      constructor(x,y){ this.x=x;this.y=y;const c=['#FFD166','#FF9494','#A0E7E5','#B4E380','#FFB3BA','#FFDFBA','#FFFFBA'];this.color=c[Math.floor(Math.random()*c.length)];this.particles=[];for(let i=0;i<40;i++)this.particles.push(new Particle(this.x,this.y,this.color));this.alive=true; }
+      update(){ this.particles.forEach(p=>p.update());this.particles=this.particles.filter(p=>p.life>0);if(!this.particles.length)this.alive=false; }
+      draw(ctx){ this.particles.forEach(p=>p.draw(ctx)); }
+    }
+    function launchFirework(x,y){ fireworks.push(new Firework(x,y)); }
+    function animateFireworks(){
+      fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);
+      fireworks.forEach(f=>{ f.update();f.draw(fwCtx); });
+      fireworks=fireworks.filter(f=>f.alive);
+      requestAnimationFrame(animateFireworks);
+    }
+    animateFireworks();
+    function randomFireworks(duration=4000){
+      const start=Date.now();
+      function spawn(){ if(Date.now()-start>duration)return; launchFirework(random(100,fwCanvas.width-100),random(80,fwCanvas.height*0.5)); setTimeout(spawn,random(200,500)); }
+      spawn();
+    }
+
+    // ========== 彩蛋信封 ==========
+    const secretEnvelope = document.getElementById('secretEnvelope');
+    const secretMessageBox = document.getElementById('secretMessageBox');
+    const secretText = document.getElementById('secretText');
+    const closeSecret = document.getElementById('closeSecret');
+    secretText.textContent = secretMessage;
+    function showEnvelope() { secretEnvelope.classList.add('show'); }
+    secretEnvelope.addEventListener('click', (e) => { e.stopPropagation(); secretMessageBox.classList.add('active'); });
+    closeSecret.addEventListener('click', (e) => { e.stopPropagation(); secretMessageBox.classList.remove('active'); });
+    secretMessageBox.addEventListener('click', (e) => { e.stopPropagation(); });
+
+    function showMemoryHint() {
+      memoryHint.classList.add('show');
+      memoriesReady = true;
+      setTimeout(showEnvelope, 18000);
+    }
+
+    // ========== 全部动画触发函数 ==========
+    async function startAllAnimations() {
+      // 1. 熄灭蜡烛
+      blowOutCandles();
+      
+      // 2. 显示副标题
+      subMessageDiv.classList.add('show');
+      
+      // 3. 启动音乐
+      startMusic();
+      
+      // 4. 启动弹幕
+      startBarrage();
+      
+      // 5. 打字机显示祝福
+      messageDiv.classList.add('show');
+      const msg = `祝 ${name} 14岁生日快乐！`;
+      await typeMessage(msg, messageDiv, 120);
+      
+      // 6. 烟花秀
+      randomFireworks(5000);
+      setTimeout(() => randomFireworks(4000), 1500);
+      setTimeout(() => randomFireworks(3000), 4000);
+      
+      // 7. 显示回忆入口
+      setTimeout(showMemoryHint, 2000);
+    }
+
+    // ========== 密码验证 + 自动触发 ==========
+    const passwordOverlay = document.getElementById('passwordOverlay');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordError = document.getElementById('passwordError');
+    let triggered = false;
+
+    function checkPassword() {
+      if (triggered) return;
+      const value = passwordInput.value.trim();
+      if (value === CORRECT_PASSWORD) {
+        triggered = true;
+        // 隐藏密码弹窗
+        passwordOverlay.classList.add('hidden');
+        // 直接触发全部动画
+        startAllAnimations();
+      } else {
+        passwordError.classList.add('show');
+        passwordInput.value = '';
+        passwordInput.focus();
+        setTimeout(() => {
+          passwordError.classList.remove('show');
+        }, 2000);
+      }
+    }
+
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkPassword();
+      }
+    });
+
+    passwordInput.addEventListener('input', () => {
+      if (passwordInput.value.trim().length >= 3) {
+        clearTimeout(passwordInput._autoCheckTimer);
+        passwordInput._autoCheckTimer = setTimeout(checkPassword, 400);
+      }
+    });
+
+    passwordInput.focus();
+
+    // ========== 相册逻辑 ==========
+    const galleryOverlay = document.getElementById('galleryOverlay');
+    const galleryImage = document.getElementById('galleryImage');
+    const galleryCaption = document.getElementById('galleryCaption');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const galleryClose = document.getElementById('galleryClose');
+    const galleryImageContainer = document.getElementById('galleryImageContainer');
+    let currentIndex = 0;
+
+    function showImage(index) {
+      if (index < 0) index = memories.length - 1;
+      if (index >= memories.length) index = 0;
+      currentIndex = index;
+      galleryImage.style.opacity = 0;
+      setTimeout(() => {
+        galleryImage.src = memories[currentIndex].src;
+        galleryCaption.textContent = memories[currentIndex].caption || '';
+        galleryImage.style.opacity = 1;
+        galleryImage.onerror = function() {
+          this.onerror = null;
+          this.src = getPlaceholder('这里本该有我们的合照 🌸');
+        };
+      }, 200);
+    }
+
+    function openGallery() {
+      if (!memoriesReady) return;
+      currentIndex = 0;
+      showImage(0);
+      galleryOverlay.classList.add('active');
+    }
+
+    function closeGallery(e) {
+      if (e) e.stopPropagation();
+      galleryOverlay.classList.remove('active');
+    }
+
+    galleryClose.addEventListener('click', closeGallery);
+    galleryOverlay.addEventListener('click', (e) => {
+      if (e.target === galleryOverlay) closeGallery(e);
+    });
+
+    memoryHint.addEventListener('click', (e) => { 
+      e.stopPropagation(); 
+      openGallery(); 
+    });
+
+    document.body.addEventListener('click', (e) => {
+      if (!memoriesReady) return;
+      if (galleryOverlay.classList.contains('active')) return;
+      if (e.target === musicToggle || musicToggle.contains(e.target)) return;
+      if (e.target === secretEnvelope) return;
+      if (secretMessageBox.classList.contains('active')) return;
+      
+      openGallery();
+    });
+
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); showImage(currentIndex - 1); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); showImage(currentIndex + 1); });
+
+    let touchStartX = 0, touchEndX = 0;
+    galleryImageContainer.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    galleryImageContainer.addEventListener('touchend', (e) => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); });
+    function handleSwipe() {
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 50) { if(diff > 0) showImage(currentIndex + 1); else showImage(currentIndex - 1); }
+    }
+  })();
+</script>
+</body>
+</html>
